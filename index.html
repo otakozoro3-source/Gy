@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>تمارين المنزل</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;800&family=Inter:wght@400;500&family=Tajawal:wght@400;500;700&display=swap">
+<style>
+/* Layout: sticky search + filter bar over a responsive grid of exercise cards; a card opens in place to show steps and video links. */
+:root {
+  --bg: #0a0a0b;
+  --surface: #131315;
+  --surface-2: #1b1b1e;
+  --line: #2a2a2e;
+  --fg: #f3f3f1;
+  --muted: #8f8f96;
+  --accent: #f3f3f1;
+  --on-accent: #0a0a0b;
+  --font-display: "Cairo", "Tajawal", system-ui, sans-serif;
+  --font-body: "Tajawal", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-latin: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { background: var(--bg); }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.6;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0 48px;
+}
+body::before {
+  content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px);
+  background: var(--bg); z-index: 10;
+}
+.wrap { max-width: 1080px; margin: 0 auto; }
+header.top { padding-top: 28px; padding-bottom: 8px; }
+h1 { font-family: var(--font-display); font-weight: 800; font-size: clamp(1.9rem, 6vw, 2.8rem); line-height: 1.15; margin: 0 0 6px; text-wrap: balance; }
+.sub { color: var(--muted); margin: 0; max-width: 52ch; }
+
+.bar {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
+  background: var(--bg); padding-block: 14px 10px;
+  border-bottom: 1px solid var(--line);
+  display: grid; gap: 12px;
+}
+.search { position: relative; }
+.search input {
+  width: 100%; height: 52px; border-radius: 14px; border: 1px solid var(--line);
+  background: var(--surface); color: var(--fg); font: inherit; font-size: 1.05rem;
+  padding-inline: 48px 16px;
+}
+.search input::placeholder { color: var(--muted); }
+.search input:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
+.search svg { position: absolute; inset-block: 0; inset-inline-start: 16px; margin-block: auto; color: var(--muted); }
+.search .clear {
+  position: absolute; inset-block: 0; inset-inline-end: 10px; margin-block: auto; width: 32px; height: 32px;
+  border: 0; border-radius: 50%; background: var(--surface-2); color: var(--fg); cursor: pointer; font-size: 1.1rem; line-height: 1;
+}
+.search .clear[hidden] { display: none; }
+
+.filters { display: grid; gap: 8px; }
+.row { display: flex; gap: 8px; align-items: center; min-width: 0; }
+.row .lab { flex: none; font-size: .78rem; letter-spacing: .02em; color: var(--muted); width: 46px; }
+.chips { display: flex; gap: 8px; overflow-x: auto; padding-block: 2px; scrollbar-width: none; min-width: 0; flex: 1; }
+.chips::-webkit-scrollbar { display: none; }
+.chip {
+  flex: none; border: 1px solid var(--line); background: transparent; color: var(--fg);
+  font: inherit; font-size: .92rem; padding: 6px 14px; border-radius: 999px; cursor: pointer; white-space: nowrap;
+}
+.chip:hover { border-color: var(--muted); }
+.chip[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); font-weight: 700; }
+.chip:focus-visible, .card-head:focus-visible, .btn:focus-visible, .reset:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
+
+.meta { display: flex; justify-content: space-between; align-items: center; padding-block: 18px 12px; color: var(--muted); font-size: .92rem; }
+.reset { background: none; border: 0; color: var(--fg); font: inherit; text-decoration: underline; text-underline-offset: 4px; cursor: pointer; padding: 4px; }
+.reset[hidden] { display: none; }
+
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 12px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; min-width: 0; overflow: hidden; }
+.card.open { grid-column: 1 / -1; border-color: #4a4a50; background: var(--surface-2); }
+.card-head {
+  width: 100%; text-align: start; background: none; border: 0; color: inherit; font: inherit;
+  padding: 16px; cursor: pointer; display: grid; gap: 8px;
+}
+.name-ar { font-family: var(--font-display); font-weight: 800; font-size: 1.2rem; line-height: 1.3; }
+.name-en { font-family: var(--font-latin); font-size: .85rem; color: var(--muted); direction: ltr; text-align: end; }
+.title-row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.tags { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.tag { font-size: .78rem; color: var(--muted); border: 1px solid var(--line); border-radius: 6px; padding: 1px 8px; }
+.dots { display: inline-flex; gap: 3px; margin-inline-start: 4px; }
+.dots i { width: 6px; height: 6px; border-radius: 50%; background: var(--line); display: block; }
+.dots i.on { background: var(--fg); }
+.lvl { font-size: .78rem; color: var(--muted); display: inline-flex; align-items: center; gap: 4px; }
+
+.detail { padding: 4px 16px 20px; display: grid; gap: 16px; border-top: 1px solid var(--line); }
+.detail[hidden] { display: none; }
+.detail h3 { font-family: var(--font-display); font-size: .95rem; margin: 16px 0 6px; color: var(--muted); font-weight: 600; }
+.detail ol { margin: 0; padding-inline-start: 22px; display: grid; gap: 6px; }
+.detail ol li::marker { color: var(--muted); font-family: var(--font-latin); }
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 12px; }
+.fact { background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; min-width: 0; }
+.fact b { display: block; font-size: .78rem; color: var(--muted); font-weight: 500; margin-bottom: 2px; }
+.videos { display: flex; gap: 10px; flex-wrap: wrap; }
+.btn {
+  display: inline-flex; align-items: center; gap: 10px; text-decoration: none; font-weight: 700;
+  padding: 12px 18px; border-radius: 12px; border: 1px solid var(--fg); color: var(--fg);
+}
+.btn.primary { background: var(--accent); color: var(--on-accent); }
+.btn:hover { opacity: .88; }
+.note { color: var(--muted); font-size: .82rem; margin: 0; }
+
+.empty { text-align: center; padding: 56px 16px; color: var(--muted); border: 1px dashed var(--line); border-radius: 16px; }
+.empty b { display: block; color: var(--fg); font-family: var(--font-display); font-size: 1.2rem; margin-bottom: 4px; }
+
+@media (max-width: 520px) {
+  .row .lab { display: none; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .card { transition: border-color .15s ease; }
+}
+</style>
+</head>
+<body>
+
+<main class="wrap" dir="rtl" lang="ar">
+  <header class="top">
+    <h1>تمارين المنزل</h1>
+    <p class="sub">ابحث بالاسم بالعربي أو بالإنجليزي، فلتر حسب العضلة والمستوى، وافتح أي تمرين لتشوف الخطوات وفيديو الشرح.</p>
+  </header>
+
+  <section class="bar" aria-label="البحث والفلاتر">
+    <div class="search">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+      <input id="q" type="search" inputmode="search" autocomplete="off" placeholder="ابحث: ضغط، squat، بطن..." aria-label="ابحث عن تمرين">
+      <button class="clear" id="clr" type="button" aria-label="مسح البحث" hidden>×</button>
+    </div>
+    <div class="filters">
+      <div class="row"><span class="lab">العضلة</span><div class="chips" id="f-muscle"></div></div>
+      <div class="row"><span class="lab">المستوى</span><div class="chips" id="f-level"></div></div>
+      <div class="row"><span class="lab">الأدوات</span><div class="chips" id="f-equip"></div></div>
+    </div>
+  </section>
+
+  <div class="meta">
+    <span id="count"></span>
+    <button class="reset" id="reset" type="button" hidden>مسح الفلاتر</button>
+  </div>
+  <section class="grid" id="grid" aria-live="polite"></section>
+</main>
+
+<script>
+(function () {
+  var MUSCLES = ["صدر","ظهر","أكتاف","ذراعين","بطن","أرجل","أرداف","كامل الجسم","كارديو"];
+  var LEVELS = ["مبتدئ","متوسط","متقدم"];
+  var EQUIPS = ["بدون أدوات","أدوات بسيطة"];
+
+  function E(ar, en, m, l, eq, sets, steps, mistake, alias) {
+    return { ar: ar, en: en, m: m, l: l, eq: eq, sets: sets, steps: steps, mistake: mistake, alias: alias || "" };
+  }
+
+  var DATA = [
+    E("ضغط عادي","Push-Up","صدر",0,0,"3 جولات × 10-15 مرة",
+      ["ضع يديك على الأرض أعرض قليلاً من كتفيك وجسمك خط مستقيم من الرأس للكعب.","انزل بصدرك لحد ما يقرب من الأرض والمرفقين بزاوية 45° عن الجسم.","ادفع الأرض بقوة وارجع لوضع البداية من غير ما تقفل المرفق بعنف."],
+      "نزول الوسط أو رفع الأرداف لفوق.","pushup push up بوش اب تمرين الصدر"),
+    E("ضغط على الركب","Knee Push-Up","صدر",0,0,"3 جولات × 8-12 مرة",
+      ["ضع ركبتيك على الأرض ويديك أعرض قليلاً من الكتفين.","حافظ على خط مستقيم من الركبة للرأس وانزل بالصدر ببطء.","ادفع للأعلى وزفر مع الدفع."],
+      "إخراج الأرداف للخلف وكسر الخط المستقيم.","knee pushup ضغط مبتدئين"),
+    E("ضغط مائل للأعلى","Incline Push-Up","صدر",0,1,"3 جولات × 10-15 مرة",
+      ["ضع يديك على حافة كرسي ثابت أو طاولة والجسم مائل لفوق.","انزل بصدرك نحو الحافة وجسمك مشدود.","ادفع وارجع للبداية. كل ما كان السطح أوطى كان التمرين أصعب."],
+      "استخدام سطح غير ثابت.","incline pushup ضغط مائل"),
+    E("ضغط الرجلين مرفوعتين","Decline Push-Up","صدر",2,1,"3 جولات × 8-12 مرة",
+      ["ضع قدميك على كرسي ويديك على الأرض أعرض من الكتفين.","شد البطن وانزل بالصدر للأرض بتحكم.","ادفع للأعلى مع الحفاظ على الجسم مستقيماً."],
+      "ترك أسفل الظهر يهبط.","decline pushup ضغط صدر علوي"),
+    E("ضغط الماس","Diamond Push-Up","ذراعين",1,0,"3 جولات × 8-12 مرة",
+      ["ضع يديك تحت الصدر وشكل بإبهامك وسبابتيك معيناً (ألماسة).","انزل والمرفقين قريبين من الجسم.","ادفع للأعلى وركز على عضلة الترايسبس."],
+      "فتح المرفقين للخارج.","diamond pushup تراي ضغط ضيق ترايسبس"),
+    E("غطس على الكرسي","Chair Dips","ذراعين",1,1,"3 جولات × 10-15 مرة",
+      ["اجلس على حافة كرسي ثابت وضع كفيك بجانب الأرداف وابعد الأرداف عن الكرسي.","انزل بثني المرفقين لحد 90° والظهر قريب من الكرسي.","ادفع للأعلى بقوة الترايسبس."],
+      "رفع الكتفين لقرب الأذنين.","dips tricep dip ترايسبس غطس"),
+    E("ضغط الهرم","Pike Push-Up","أكتاف",1,0,"3 جولات × 8-12 مرة",
+      ["ارفع الأرداف لأعلى لتشكل جسمك حرف V مقلوب.","انثنِ بالمرفقين وانزل برأسك نحو الأرض بين يديك.","ادفع للأعلى مع بقاء الأرداف مرتفعة."],
+      "تحويل الحركة لضغط عادي.","pike pushup ضغط الأكتاف كتف"),
+    E("لمس الكتف من البلانك","Plank Shoulder Taps","أكتاف",1,0,"3 جولات × 20 لمسة",
+      ["ابدأ بوضع الضغط وباعد قدميك قليلاً للثبات.","املس الكتف المقابل بيدك دون تحريك الأرداف.","بدّل اليدين بتحكم وإيقاع ثابت."],
+      "اهتزاز الأرداف يميناً ويساراً.","shoulder tap تاب الكتف"),
+    E("دوائر الذراعين","Arm Circles","أكتاف",0,0,"2 جولات × 30 ثانية لكل اتجاه",
+      ["قف مفرود الذراعين على الجانبين بمستوى الكتف.","ارسم دوائر صغيرة للأمام ثم كبرها تدريجياً.","اعكس الاتجاه بعد 30 ثانية."],
+      "رفع الكتفين مع الحركة.","arm circle إحماء احماء"),
+    E("بلانك","Plank","بطن",0,0,"3 جولات × 30-60 ثانية",
+      ["ارتكز على الساعدين والمرفقين تحت الكتفين.","شد البطن والأرداف ليصبح الجسم خطاً مستقيماً.","تنفس بانتظام وثبّت دون أن تهبط الخصر."],
+      "رفع الأرداف أو هبوط أسفل الظهر.","plank بلانك بطن ثبات"),
+    E("بلانك جانبي","Side Plank","بطن",1,0,"3 جولات × 20-40 ثانية لكل جانب",
+      ["استلقِ على جانبك وارتكز على ساعد واحد.","ارفع الوسط لتكون كتفك وأردافك وقدمك في خط واحد.","ثبّت ثم بدّل الجانب."],
+      "ترك الورك ينزل للأرض.","side plank بلانك جانبي"),
+    E("تمرين المعدة","Crunches","بطن",0,0,"3 جولات × 15-20 مرة",
+      ["استلقِ على ظهرك وثنِ ركبتيك ويداك خلف الرأس بخفة.","ارفع الكتفين فقط عن الأرض وشد البطن.","انزل ببطء دون رمي الجسم."],
+      "شد الرقبة بالأيدي.","crunch كرنش معدة بطن"),
+    E("رفع الأرجل","Leg Raises","بطن",1,0,"3 جولات × 10-15 مرة",
+      ["استلقِ على ظهرك وضع يديك تحت أسفل الظهر لو احتجت.","ارفع رجليك المفرودتين لحد 90° ببطء.","انزلهم دون ما يلمسوا الأرض."],
+      "قوس أسفل الظهر عن الأرض.","leg raise رفع الارجل بطن سفلي"),
+    E("تسلق الجبال","Mountain Climbers","بطن",1,0,"3 جولات × 30 ثانية",
+      ["ابدأ بوضع الضغط والجسم مستقيم.","اسحب ركبة نحو الصدر ثم بدّل بسرعة.","حافظ على الأرداف منخفضة والبطن مشدود."],
+      "رفع الأرداف لأعلى.","mountain climber تسلق الجبل كارديو"),
+    E("دراجة البطن","Bicycle Crunches","بطن",0,0,"3 جولات × 20 مرة",
+      ["استلقِ ويداك خلف الرأس وارفع الكتفين.","قرّب المرفق من الركبة المعاكسة وافرد الرجل الأخرى.","بدّل بحركة بطيئة ومتحكمة."],
+      "الحركة السريعة وشد الرقبة.","bicycle crunch دراجة معدة"),
+    E("مقص الجسم V","V-Ups","بطن",2,0,"3 جولات × 10-12 مرة",
+      ["استلقِ مفرود الذراعين خلف الرأس والرجلين مفرودتين.","ارفع الجذع والرجلين معاً حتى تلمس أصابع قدميك.","انزل ببطء لوضع البداية."],
+      "استخدام زخم الجسم بدل عضلة البطن.","v up vups v-up معدة متقدم"),
+    E("سكوات","Bodyweight Squat","أرجل",0,0,"3 جولات × 15-20 مرة",
+      ["قف والقدمان بعرض الكتفين وأصابعك للخارج قليلاً.","ادفع الأرداف للخلف وانزل كأنك تجلس على كرسي.","ارجع للأعلى بالضغط على الكعبين."],
+      "دخول الركبتين للداخل أو رفع الكعبين.","squat اسكوات القرفصاء ارجل"),
+    E("سكوات بالقفز","Jump Squat","أرجل",1,0,"3 جولات × 10-12 مرة",
+      ["انزل في وضع السكوات العادي.","اقفز بقوة لأعلى وافرد الجسم.","اهبط بنعومة على مشط القدم وارجع للسكوات مباشرة."],
+      "الهبوط بصلابة والركب مقفولة.","jump squat قفز سكوات"),
+    E("لانجز","Lunges","أرجل",0,0,"3 جولات × 10 مرات لكل رجل",
+      ["قف وخذ خطوة كبيرة للأمام.","انزل حتى تصبح الركبتان بزاوية 90° والركبة الخلفية قريبة من الأرض.","ادفع بالقدم الأمامية وارجع وبدّل."],
+      "تجاوز الركبة الأمامية لأصابع القدم.","lunge لانج اندفاع"),
+    E("لانجز جانبي","Lateral Lunge","أرجل",1,0,"3 جولات × 8-10 مرات لكل جانب",
+      ["قف بقدمين متباعدتين وخذ خطوة واسعة للجانب.","اثنِ ركبة واحدة وأرداف للخلف والرجل الأخرى مفرودة.","ادفع للرجوع وبدّل الجانب."],
+      "رفع الكعب أو إمالة الجذع للأمام كثيراً.","lateral lunge side lunge جانبي"),
+    E("سكوات بلغاري","Bulgarian Split Squat","أرجل",2,1,"3 جولات × 8-10 مرات لكل رجل",
+      ["ضع قدمك الخلفية على كرسي خلفك وقف بقدم أمامية بعيدة قليلاً.","انزل مع بقاء الجذع مستقيماً حتى تقارب الركبة الخلفية الأرض.","ادفع بالكعب الأمامي لتعود."],
+      "وقوف قريب جداً من الكرسي.","bulgarian split squat بلغاري"),
+    E("سكوات برجل واحدة","Pistol Squat","أرجل",2,0,"3 جولات × 3-6 مرات لكل رجل",
+      ["قف على رجل وافرد الأخرى أمامك.","انزل ببطء مع الحفاظ على التوازن.","ادفع بالكعب لتصعد. استخدم دعماً خفيفاً في البداية."],
+      "فقدان التوازن وسقوط الكعب.","pistol squat مسدس"),
+    E("رفع السمانة","Calf Raises","أرجل",0,0,"3 جولات × 20 مرة",
+      ["قف والقدمان بعرض الورك.","ارتفع على أطراف أصابعك وثبّت ثانية.","انزل ببطء."],
+      "الحركة السريعة بدون ثبات.","calf raise سمانة ساق"),
+    E("جلوس على الحائط","Wall Sit","أرجل",0,0,"3 جولات × 30-60 ثانية",
+      ["ادعم ظهرك على الحائط وانزل لحد 90° في الركبتين.","الفخذان موازيان للأرض والكعبان تحت الركبتين.","ثبّت وتنفس."],
+      "وضع اليدين على الفخذين.","wall sit جلوس حائط"),
+    E("جسر الأرداف","Glute Bridge","أرداف",0,0,"3 جولات × 15 مرة",
+      ["استلقِ على ظهرك وثنِ ركبتيك والقدمان على الأرض.","ارفع الأرداف بضغط الكعبين حتى يصبح الجسم خطاً من الكتف للركبة.","اعصر الأرداف في الأعلى ثم انزل ببطء."],
+      "رفع الظهر بدل الأرداف.","glute bridge جسر الاليه مؤخرة"),
+    E("جسر بساق واحدة","Single-Leg Glute Bridge","أرداف",1,0,"3 جولات × 10 لكل جانب",
+      ["اتخذ وضع الجسر وارفع رجلاً مفرودة في الهواء.","ادفع بالكعب الثاني لترفع الأرداف.","انزل بتحكم وبدّل."],
+      "ميل الحوض لجانب.","single leg bridge جسر رجل واحدة"),
+    E("ركلة الحمار","Donkey Kicks","أرداف",0,0,"3 جولات × 15 لكل رجل",
+      ["اتخذ وضع الزحف على اليدين والركبتين.","ارفع رجلاً مثنية للأعلى كأنك تضغط بالقدم نحو السقف.","انزل دون لمس الأرض وكرر."],
+      "تقوس أسفل الظهر.","donkey kick ركلة خلفية"),
+    E("رفع الورك الجانبي","Fire Hydrant","أرداف",0,0,"3 جولات × 15 لكل جانب",
+      ["اتخذ وضع الزحف.","ارفع ركبة واحدة جانباً مع بقاء الورك ثابتاً.","انزل ببطء وكرر."],
+      "ميل الجذع مع الحركة.","fire hydrant هيدرنت"),
+    E("سوبرمان","Superman","ظهر",0,0,"3 جولات × 12 مرة",
+      ["استلقِ على بطنك والذراعين مفرودتين أمامك.","ارفع الذراعين والرجلين معاً وانظر للأرض.","ثبّت ثانيتين وانزل ببطء."],
+      "رفع الرأس لأعلى والضغط على الرقبة.","superman سوبرمان أسفل الظهر"),
+    E("ثعبان الثلج العكسي","Reverse Snow Angels","ظهر",0,0,"3 جولات × 12 مرة",
+      ["استلقِ على بطنك وارفع صدرك قليلاً.","حرك الذراعين من جانب الورك لفوق الرأس بقوس.","ارجع بنفس المسار بتحكم."],
+      "رفع الرأس أو شد الرقبة.","snow angel ظهر علوي"),
+    E("سحب معكوس تحت الطاولة","Inverted Row","ظهر",1,1,"3 جولات × 8-12 مرة",
+      ["استلقِ تحت طاولة ثابتة وامسك حافتها بيدين بعرض الكتفين.","شد جسمك مستقيماً واسحب صدرك نحو الحافة.","انزل ببطء. تأكد أن الطاولة ثقيلة وثابتة."],
+      "استخدام طاولة غير ثابتة.","inverted row table row سحب ظهر"),
+    E("عقلة","Pull-Up","ظهر",2,1,"3 جولات × 5-8 مرات",
+      ["علق على بار ثابت وكفاك للأمام بعرض أعرض من الكتفين.","اسحب نفسك حتى يصبح الذقن فوق البار.","انزل ببطء حتى تفرد الذراعين."],
+      "الاعتماد على الزخم والتأرجح.","pull up pullup عقلة بار"),
+    E("الكلب والطائر","Bird Dog","ظهر",0,0,"3 جولات × 10 لكل جانب",
+      ["اتخذ وضع الزحف.","افرد يداً للأمام ورجلاً مخالفة للخلف.","ثبّت ثانيتين وبدّل."],
+      "اهتزاز الجذع ورفع الرجل أعلى من الظهر.","bird dog بيرد دوج ظهر ثبات"),
+    E("بيربي","Burpees","كامل الجسم",1,0,"3 جولات × 8-12 مرة",
+      ["انزل للقرفصاء وضع يديك على الأرض.","اقفز برجليك للخلف لوضع الضغط، انزل بصدرك.","ارجع بالقفز للقرفصاء ثم اقفز للأعلى."],
+      "تحدب الظهر عند الهبوط.","burpee بيربي"),
+    E("مشية الدب","Bear Crawl","كامل الجسم",1,0,"3 جولات × 30 ثانية",
+      ["اتخذ وضع الزحف ثم ارفع الركبتين قليلاً عن الأرض.","تحرك للأمام بيد ورجل مخالفة بالتناوب.","ثبّت الظهر مسطحاً."],
+      "رفع الأرداف للأعلى.","bear crawl زحف الدب"),
+    E("الدودة","Inchworm","كامل الجسم",0,0,"3 جولات × 8 مرات",
+      ["قف وانحنِ وضع يديك على الأرض.","امشِ بيديك للأمام حتى وضع البلانك.","امشِ بقدميك نحو يديك وقف."],
+      "ثني الركبتين كثيراً.","inchworm دودة"),
+    E("بلانك للأعلى والأسفل","Plank Up-Downs","ذراعين",1,0,"3 جولات × 10 مرات",
+      ["ابدأ من وضع البلانك على الساعدين.","ارفع نفسك لوضع الضغط بيد ثم الأخرى.","انزل بنفس الترتيب وبدّل اليد البادئة."],
+      "تمايل الأرداف.","plank up down بلانك"),
+    E("قفزات الجاك","Jumping Jacks","كارديو",0,0,"3 جولات × 30-45 ثانية",
+      ["قف والقدمان مضمومتان واليدان بجانبك.","اقفز وافتح الرجلين وارفع الذراعين فوق الرأس.","اقفز وارجع للوضع الأول بإيقاع ثابت."],
+      "الهبوط بصلابة على الكعب.","jumping jack جامبنج جاك احماء"),
+    E("رفع الركبتين العالي","High Knees","كارديو",0,0,"3 جولات × 30 ثانية",
+      ["اجرِ في مكانك وارفع ركبتيك لمستوى الوسط.","حرك ذراعيك بالتبادل.","حافظ على الجذع مستقيماً."],
+      "الميل للخلف.","high knees ركض في المكان"),
+    E("قفزات المتزحلق","Skater Jumps","كارديو",1,0,"3 جولات × 20 مرة",
+      ["اقفز جانباً على رجل واحدة.","هبط بنعومة واثنِ الركبة وحرك الذراع بالمقابل.","اقفز للجانب الآخر بتتابع."],
+      "الهبوط بركبة مقفولة.","skater jump سكيتر")
+  ];
+
+  var state = { q: "", m: "", l: "", eq: "", open: -1 };
+
+  function norm(s) {
+    return String(s).toLowerCase()
+      .replace(/[ً-ٰٟـ]/g, "")
+      .replace(/[أإآٱ]/g, "ا")
+      .replace(/ى/g, "ي")
+      .replace(/ة/g, "ه")
+      .replace(/[^ء-يa-z0-9 ]/g, " ")
+      .replace(/\s+/g, " ").trim();
+  }
+  DATA.forEach(function (d, i) {
+    d.id = i;
+    d.hay = norm(d.ar + " " + d.en + " " + d.alias + " " + MUSCLES[MUSCLES.indexOf(d.m)]);
+  });
+
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+
+  function chips(el, items, key) {
+    var html = '<button type="button" class="chip" data-k="' + key + '" data-v="" aria-pressed="true">الكل</button>';
+    items.forEach(function (t) {
+      html += '<button type="button" class="chip" data-k="' + key + '" data-v="' + esc(t) + '" aria-pressed="false">' + esc(t) + '</button>';
+    });
+    el.innerHTML = html;
+  }
+  function syncChips() {
+    document.querySelectorAll(".chip").forEach(function (c) {
+      var k = c.getAttribute("data-k"), v = c.getAttribute("data-v");
+      c.setAttribute("aria-pressed", String(state[k] === v));
+    });
+  }
+
+  function matches(d) {
+    if (state.m && d.m !== state.m) return false;
+    if (state.l !== "" && LEVELS[d.l] !== state.l) return false;
+    if (state.eq !== "" && EQUIPS[d.eq] !== state.eq) return false;
+    if (state.q) {
+      var words = norm(state.q).split(" ");
+      for (var i = 0; i < words.length; i++) if (d.hay.indexOf(words[i]) === -1) return false;
+    }
+    return true;
+  }
+
+  var play = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>';
+
+  function card(d) {
+    var open = state.open === d.id;
+    var dots = "";
+    for (var i = 0; i < 3; i++) dots += '<i class="' + (i <= d.l ? "on" : "") + '"></i>';
+    var yEn = "https://www.youtube.com/results?search_query=" + encodeURIComponent(d.en + " proper form tutorial");
+    var yAr = "https://www.youtube.com/results?search_query=" + encodeURIComponent("شرح تمرين " + d.ar + " الطريقة الصحيحة");
+    var h = '<article class="card' + (open ? " open" : "") + '">' +
+      '<button type="button" class="card-head" data-id="' + d.id + '" aria-expanded="' + open + '">' +
+        '<div class="title-row"><span class="name-ar">' + esc(d.ar) + '</span><span class="name-en">' + esc(d.en) + '</span></div>' +
+        '<div class="tags"><span class="tag">' + esc(d.m) + '</span><span class="tag">' + EQUIPS[d.eq] + '</span>' +
+        '<span class="lvl">' + LEVELS[d.l] + '<span class="dots">' + dots + '</span></span></div>' +
+      '</button>';
+    if (open) {
+      h += '<div class="detail">' +
+        '<div><h3>طريقة التنفيذ</h3><ol>' + d.steps.map(function (s) { return "<li>" + esc(s) + "</li>"; }).join("") + '</ol></div>' +
+        '<div class="facts"><div class="fact"><b>العدد المقترح</b>' + esc(d.sets) + '</div><div class="fact"><b>خطأ شائع</b>' + esc(d.mistake) + '</div></div>' +
+        '<div><h3>فيديو الشرح</h3><div class="videos">' +
+          '<a class="btn primary" href="' + yEn + '" target="_blank" rel="noopener">' + play + 'فيديو بالإنجليزي</a>' +
+          '<a class="btn" href="' + yAr + '" target="_blank" rel="noopener">' + play + 'شرح بالعربي</a>' +
+        '</div><p class="note" style="margin-top:10px">الفيديوهات تفتح على يوتيوب في تبويب جديد.</p></div>' +
+      '</div>';
+    }
+    return h + '</article>';
+  }
+
+  function render() {
+    var list = DATA.filter(matches);
+    var grid = document.getElementById("grid");
+    document.getElementById("count").textContent = list.length + " تمرين من " + DATA.length;
+    var any = state.q || state.m || state.l || state.eq;
+    document.getElementById("reset").hidden = !any;
+    document.getElementById("clr").hidden = !state.q;
+    if (!list.length) {
+      grid.innerHTML = '<div class="empty" style="grid-column:1/-1"><b>ما لقينا تمرين بهذا الاسم</b>جرّب كلمة أقصر أو امسح الفلاتر.</div>';
+    } else {
+      grid.innerHTML = list.map(card).join("");
+    }
+    syncChips();
+  }
+
+  chips(document.getElementById("f-muscle"), MUSCLES, "m");
+  chips(document.getElementById("f-level"), LEVELS, "l");
+  chips(document.getElementById("f-equip"), EQUIPS, "eq");
+
+  document.querySelector(".filters").addEventListener("click", function (e) {
+    var b = e.target.closest(".chip");
+    if (!b) return;
+    state[b.getAttribute("data-k")] = b.getAttribute("data-v");
+    state.open = -1;
+    render();
+  });
+  var q = document.getElementById("q");
+  q.addEventListener("input", function () { state.q = q.value; state.open = -1; render(); });
+  document.getElementById("clr").addEventListener("click", function () { q.value = ""; state.q = ""; state.open = -1; render(); q.focus(); });
+  document.getElementById("reset").addEventListener("click", function () {
+    q.value = ""; state.q = ""; state.m = ""; state.l = ""; state.eq = ""; state.open = -1; render();
+  });
+  document.getElementById("grid").addEventListener("click", function (e) {
+    var b = e.target.closest(".card-head");
+    if (!b) return;
+    var id = Number(b.getAttribute("data-id"));
+    state.open = state.open === id ? -1 : id;
+    render();
+    var el = document.querySelector('.card-head[data-id="' + id + '"]');
+    if (el && state.open === id) el.scrollIntoView({ block: "nearest" });
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
